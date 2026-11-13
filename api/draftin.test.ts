@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import draftinHandler, { _resetProxyForTests } from './draftin';
-import sitemapHandler, { _resetSitemapForTests } from './sitemap';
+import draftinHandler, { _clearCacheForTests } from './draftin';
+import sitemapHandler from './sitemap';
 
 interface MockResponse {
   statusCode: number;
@@ -32,8 +32,7 @@ describe('Vercel Serverless Functions (/api)', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
-    _resetProxyForTests();
-    _resetSitemapForTests();
+    _clearCacheForTests();
     process.env = {
       ...originalEnv,
       DRAFTIN_API_KEY: 'dra_test_key_vercel',
@@ -102,6 +101,27 @@ describe('Vercel Serverless Functions (/api)', () => {
     );
   });
 
+  it('deve retornar 503 com mensagem clara se DRAFTIN_API_KEY não estiver no env', async () => {
+    delete process.env.DRAFTIN_API_KEY;
+
+    const req = {
+      method: 'GET',
+      url: '/api/draftin?__path=public/posts',
+      headers: {
+        host: 'blog-frontend-topaz-kappa.vercel.app',
+      },
+    } as unknown as IncomingMessage;
+
+    const res = createMockResponse();
+
+    await draftinHandler(req, res);
+
+    expect(res.statusCode).toBe(503);
+    const parsed = JSON.parse(res.body);
+    expect(parsed.error.code).toBe('CONFIGURATION_ERROR');
+    expect(parsed.error.message).toContain('DRAFTIN_API_KEY não configurada');
+  });
+
   it('deve retornar 404 para caminhos de upstream não autorizados', async () => {
     const req = {
       method: 'GET',
@@ -123,8 +143,15 @@ describe('Vercel Serverless Functions (/api)', () => {
   it('deve gerar /sitemap.xml via Serverless Function', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       status: 200,
-      headers: new Headers({ 'content-type': 'application/json; charset=utf-8' }),
-      text: async () => JSON.stringify({ success: true, data: [] }),
+      json: async () => ({
+        data: [
+          {
+            slug: 'artigo-exemplo',
+            status: 'PUBLISHED',
+            updatedAt: '2026-11-10T12:00:00Z',
+          },
+        ],
+      }),
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -144,6 +171,6 @@ describe('Vercel Serverless Functions (/api)', () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers['Content-Type']).toContain('xml');
     expect(res.body).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-    expect(res.body).toContain('<urlset');
+    expect(res.body).toContain('<loc>https://blog-frontend-topaz-kappa.vercel.app/artigos/artigo-exemplo</loc>');
   });
 });
