@@ -26,6 +26,17 @@ A documentação oficial do DraftIn recomenda **não expor `DRAFTIN_API_KEY` no 
    ```
 3. Personalize nome do blog, tagline, autor e introdução editorial no `.env` ou diretamente em `src/config/blog.config.ts`. Para remover a introdução editorial, defina `VITE_BLOG_INTRO_ENABLED=false` (ou `intro.enabled = false`).
 
+## Deploy no Vercel
+
+O projeto possui suporte nativo ao Vercel com Serverless Functions (`api/draftin.ts` e `api/sitemap.ts`) e roteamento via `vercel.json`:
+
+1. Conecte o repositório na Vercel (o framework preset recomendado é Vite, com output `dist`).
+2. Em **Project Settings > Environment Variables**, cadastre as seguintes variáveis:
+   - `DRAFTIN_API_KEY`: sua chave secreta da DraftIn (`dra_...`).
+   - `DRAFTIN_BASE_URL`: `https://api.draftin.io` (padrão).
+   - `SITE_URL`: URL do seu domínio na Vercel (ex: `https://blog-frontend-topaz-kappa.vercel.app`).
+3. O `vercel.json` encaminha `/api/draftin/*` para a Serverless Function (mantendo a chave segura no servidor), serve `/sitemap.xml` dinamicamente e redireciona rotas da SPA para `/index.html` (evitando erro 404 ao atualizar páginas de artigos).
+
 ## Scripts
 
 ```bash

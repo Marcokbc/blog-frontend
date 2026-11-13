@@ -83,7 +83,7 @@ export function loadProxyConfigFromEnv(
 export function createDraftinServerService(config: DraftinProxyConfig) {
   const cache = new Map<string, CachedEntry>();
   const inflight = new Map<string, Promise<CachedEntry>>();
-  const fetchFn = config.fetchImpl ?? fetch;
+  const getFetch = () => config.fetchImpl ?? globalThis.fetch;
 
   async function fetchUpstream(
     upstreamPathWithQuery: string,
@@ -135,7 +135,7 @@ export function createDraftinServerService(config: DraftinProxyConfig) {
       let lastRes: Response | null = null;
 
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const res = await fetchFn(targetUrl, { method: 'GET', headers });
+        const res = await getFetch()(targetUrl, { method: 'GET', headers });
         lastRes = res;
 
         if (res.status === 429 && attempt < maxAttempts - 1) {
