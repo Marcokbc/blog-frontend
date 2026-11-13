@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-server/
+
+# Environment variables (never commit API keys)
+.env
+.env.local
+.env.*.local
+
+# Logs and caches
+*.log
+.vite/
+coverage/
+

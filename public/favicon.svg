@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Fundo escuro azul-marinho com acabamento editorial -->
+  <rect width="32" height="32" rx="6" fill="#14213D" />
+  
+  <!-- Páginas do livro aberto -->
+  <path d="M6 8.5C6 7.67 6.67 7 7.5 7H15V22.5C13.8 22 12.2 21.5 10.5 21.5H6V8.5Z" fill="#FFFFFF" />
+  <path d="M26 8.5C26 7.67 25.33 7 24.5 7H17V22.5C18.2 22 19.8 21.5 21.5 21.5H26V8.5Z" fill="#E8EDF5" />
+  
+  <!-- Base inferior das páginas (efeito de relevo editorial) -->
+  <path d="M6 21.5H10.5C12.2 21.5 13.8 22 15 22.5V24C13.8 23.5 12.2 23 10.5 23H6V21.5Z" fill="#D0D0D0" />
+  <path d="M26 21.5H21.5C19.8 21.5 18.2 22 17 22.5V24C18.2 23.5 19.8 23 21.5 23H26V21.5Z" fill="#D0D0D0" />
+  
+  <!-- Lombada central -->
+  <rect x="15.25" y="7" width="1.5" height="17" fill="#14213D" />
+  
+  <!-- Marcador de fita / ribbon -->
+  <polygon points="14.8,7 17.2,7 17.2,13.5 16,12.2 14.8,13.5" fill="#23395B" />
+  
+  <!-- Linhas de texto nas páginas -->
+  <line x1="8.5" y1="10.5" x2="13" y2="10.5" stroke="#14213D" stroke-width="1.2" stroke-linecap="round" />
+  <line x1="8.5" y1="13.5" x2="13" y2="13.5" stroke="#14213D" stroke-width="1.2" stroke-linecap="round" />
+  <line x1="8.5" y1="16.5" x2="11.5" y2="16.5" stroke="#14213D" stroke-width="1.2" stroke-linecap="round" />
+  
+  <line x1="19" y1="10.5" x2="23.5" y2="10.5" stroke="#23395B" stroke-width="1.2" stroke-linecap="round" />
+  <line x1="19" y1="13.5" x2="23.5" y2="13.5" stroke="#23395B" stroke-width="1.2" stroke-linecap="round" />
+  <line x1="19" y1="16.5" x2="22" y2="16.5" stroke="#23395B" stroke-width="1.2" stroke-linecap="round" />
+</svg>
+
