@@ -15,39 +15,40 @@ export function HomePage() {
     searchParams.get('category')?.trim() ||
     null;
 
-  // Busca por tag via URL (?tag=... ou ?busca=...)
-  const tagSearch =
-    searchParams.get('tag')?.trim() ||
+  // Busca por tag ou título via URL (?busca=... ou ?q=... ou ?tag=...)
+  const searchQuery =
     searchParams.get('busca')?.trim() ||
+    searchParams.get('q')?.trim() ||
+    searchParams.get('tag')?.trim() ||
     '';
-  const cleanTagSearch = tagSearch.replace(/^#/, '').trim();
+  const cleanSearch = searchQuery.replace(/^#/, '').trim();
 
   // Título e SEO dinâmicos com base nos filtros
   const pageTitle = useMemo(() => {
-    if (selectedCategory && cleanTagSearch) {
-      return `${selectedCategory} · #${cleanTagSearch} · ${blogConfig.title}`;
+    if (selectedCategory && cleanSearch) {
+      return `${selectedCategory} · "${cleanSearch}" · ${blogConfig.title}`;
     }
     if (selectedCategory) {
       return `${selectedCategory} · ${blogConfig.title}`;
     }
-    if (cleanTagSearch) {
-      return `Artigos sobre #${cleanTagSearch} · ${blogConfig.title}`;
+    if (cleanSearch) {
+      return `Artigos sobre "${cleanSearch}" · ${blogConfig.title}`;
     }
     return blogConfig.title;
-  }, [cleanTagSearch, selectedCategory]);
+  }, [cleanSearch, selectedCategory]);
 
   const pageDescription = useMemo(() => {
-    if (selectedCategory && cleanTagSearch) {
-      return `Artigos na categoria "${selectedCategory}" com a tag #${cleanTagSearch} em ${blogConfig.title}.`;
+    if (selectedCategory && cleanSearch) {
+      return `Artigos na categoria "${selectedCategory}" correspondentes a "${cleanSearch}" em ${blogConfig.title}.`;
     }
     if (selectedCategory) {
       return `Ensaios e publicações na categoria "${selectedCategory}" em ${blogConfig.title}.`;
     }
-    if (cleanTagSearch) {
-      return `Coleção de ensaios e artigos sobre #${cleanTagSearch} no ${blogConfig.title}.`;
+    if (cleanSearch) {
+      return `Coleção de ensaios e artigos correspondentes a "${cleanSearch}" no ${blogConfig.title}.`;
     }
     return blogConfig.tagline ?? blogConfig.intro.body;
-  }, [cleanTagSearch, selectedCategory]);
+  }, [cleanSearch, selectedCategory]);
 
   useDocumentMeta({
     title: pageTitle,
@@ -134,7 +135,7 @@ export function HomePage() {
     );
   }, [apiTags, articles]);
 
-  // Artigos filtrados por categoria E/OU busca por tag
+  // Artigos filtrados por categoria E/OU busca por tag ou título
   const filteredArticles = useMemo(() => {
     return articles.filter((article) => {
       // 1. Filtro por Categoria (se selecionada)
@@ -146,18 +147,25 @@ export function HomePage() {
         if (!matchesCategory) return false;
       }
 
-      // 2. Busca por Tag (se preenchida)
-      if (cleanTagSearch) {
-        const tagTarget = cleanTagSearch.toLowerCase();
+      // 2. Busca por Tag OU Nome do Artigo (Título ou Subtítulo)
+      if (cleanSearch) {
+        const target = cleanSearch.toLowerCase().trim();
         const matchesTag = article.tags.some((t) =>
-          t.name.toLowerCase().includes(tagTarget),
+          t.name.toLowerCase().includes(target),
         );
-        if (!matchesTag) return false;
+        const matchesTitle = article.title.toLowerCase().includes(target);
+        const matchesSubtitle = Boolean(
+          article.subtitle && article.subtitle.toLowerCase().includes(target),
+        );
+
+        if (!matchesTag && !matchesTitle && !matchesSubtitle) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [articles, cleanTagSearch, selectedCategory]);
+  }, [articles, cleanSearch, selectedCategory]);
 
   const handleSelectCategory = (category: string | null) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -171,14 +179,15 @@ export function HomePage() {
     setSearchParams(nextParams);
   };
 
-  const handleTagSearchChange = (newTag: string) => {
+  const handleSearchChange = (newTerm: string) => {
     const nextParams = new URLSearchParams(searchParams);
-    const cleaned = newTag.replace(/^#/, '').trim();
-    nextParams.delete('busca');
+    const cleaned = newTerm.replace(/^#/, '').trim();
+    nextParams.delete('q');
+    nextParams.delete('tag');
     if (!cleaned) {
-      nextParams.delete('tag');
+      nextParams.delete('busca');
     } else {
-      nextParams.set('tag', cleaned);
+      nextParams.set('busca', cleaned);
     }
     setSearchParams(nextParams);
   };
@@ -189,6 +198,7 @@ export function HomePage() {
     nextParams.delete('category');
     nextParams.delete('tag');
     nextParams.delete('busca');
+    nextParams.delete('q');
     setSearchParams(nextParams);
   };
 
@@ -200,8 +210,8 @@ export function HomePage() {
         categories={availableCategories}
         selectedCategory={selectedCategory}
         onSelectCategory={handleSelectCategory}
-        tagSearch={cleanTagSearch}
-        onTagSearchChange={handleTagSearchChange}
+        searchTerm={cleanSearch}
+        onSearchTermChange={handleSearchChange}
         availableTags={availableTags}
         totalArticlesCount={articles.length}
         onClearFilters={handleClearFilters}

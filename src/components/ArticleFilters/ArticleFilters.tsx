@@ -15,8 +15,11 @@ export interface ArticleFiltersProps {
   categories: FilterOption[];
   selectedCategory: string | null;
   onSelectCategory: (category: string | null) => void;
-  tagSearch: string;
-  onTagSearchChange: (search: string) => void;
+  searchTerm?: string;
+  onSearchTermChange?: (search: string) => void;
+  // Compatibilidade com callers existentes
+  tagSearch?: string;
+  onTagSearchChange?: (search: string) => void;
   availableTags?: FilterOption[];
   filteredCount?: number;
 }
@@ -25,25 +28,29 @@ export function ArticleFilters({
   categories,
   selectedCategory,
   onSelectCategory,
+  searchTerm,
+  onSearchTermChange,
   tagSearch,
   onTagSearchChange,
   availableTags = [],
   filteredCount = 0,
 }: ArticleFiltersProps) {
   const searchInputId = useId();
+  const rawSearch = searchTerm !== undefined ? searchTerm : (tagSearch ?? '');
+  const handleSearchChange = onSearchTermChange ?? onTagSearchChange ?? (() => {});
   const normalizedCategory = selectedCategory?.toLowerCase().trim() ?? null;
-  const cleanTagSearch = tagSearch.replace(/^#/, '').trim();
-  const hasActiveFilters = Boolean(normalizedCategory || cleanTagSearch);
+  const cleanSearch = rawSearch.replace(/^#/, '').trim();
+  const hasActiveFilters = Boolean(normalizedCategory || cleanSearch);
 
   const handleClearAll = () => {
     onSelectCategory(null);
-    onTagSearchChange('');
+    handleSearchChange('');
   };
 
   return (
     <Box
       component="nav"
-      aria-label="Filtro de artigos por categoria e busca por tag"
+      aria-label="Filtro de artigos por categoria e busca por título ou tag"
       sx={{
         mb: 3.5,
         display: 'flex',
@@ -51,7 +58,7 @@ export function ArticleFilters({
         gap: 2,
       }}
     >
-      {/* Container lado a lado com espaçamento generoso: Busca por Tag (esquerda) e Categorias alinhado ao fim (direita) */}
+      {/* Container lado a lado com espaçamento generoso: Busca por Título ou Tag (esquerda) e Categorias alinhado ao fim (direita) */}
       <Box
         sx={{
           display: 'flex',
@@ -61,7 +68,7 @@ export function ArticleFilters({
           gap: { xs: 3, md: 5, lg: 7 },
         }}
       >
-        {/* 1. CAMPO DE BUSCA POR TAG (ESQUERDA) */}
+        {/* 1. CAMPO DE BUSCA POR TÍTULO OU TAG (ESQUERDA) */}
         <Box
           sx={{
             flex: { xs: '1 1 auto', md: '1 1 50%' },
@@ -94,13 +101,13 @@ export function ArticleFilters({
                 color: EDITORIAL_COLORS.navyPrimary,
               }}
             >
-              Buscar por tag
+              Buscar por título ou tag
             </Typography>
 
-            {cleanTagSearch && (
+            {cleanSearch && (
               <ButtonBase
-                onClick={() => onTagSearchChange('')}
-                aria-label="Limpar busca por tag"
+                onClick={() => handleSearchChange('')}
+                aria-label="Limpar campo de busca"
                 sx={{
                   px: 1,
                   py: 0.25,
@@ -144,27 +151,29 @@ export function ArticleFilters({
                 px: 1.5,
                 py: 0.8,
                 fontFamily: EDITORIAL_FONTS.mono,
-                fontSize: '1rem',
+                fontSize: '0.95rem',
                 fontWeight: 700,
                 color: EDITORIAL_COLORS.navyPrimary,
                 backgroundColor: EDITORIAL_COLORS.navySoft,
                 borderRight: `2px solid ${EDITORIAL_COLORS.textPrimary}`,
                 userSelect: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
               }}
             >
-              #
+              ⌕
             </Box>
 
             <Box
               component="input"
               id={searchInputId}
               type="search"
-              value={tagSearch}
+              value={rawSearch}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                onTagSearchChange(e.target.value)
+                handleSearchChange(e.target.value)
               }
-              placeholder="digite uma tag (ex: tipografia, web)..."
-              aria-label="Buscar posts por tag"
+              placeholder="digite um título ou tag (ex: von neumann, web)..."
+              aria-label="Buscar posts por título ou tag"
               sx={{
                 flex: 1,
                 width: '100%',
@@ -183,10 +192,10 @@ export function ArticleFilters({
               }}
             />
 
-            {tagSearch && (
+            {rawSearch && (
               <ButtonBase
-                onClick={() => onTagSearchChange('')}
-                aria-label="Limpar campo de busca por tag"
+                onClick={() => handleSearchChange('')}
+                aria-label="Limpar texto digitado"
                 sx={{
                   px: 1.5,
                   py: 0.8,
@@ -228,13 +237,13 @@ export function ArticleFilters({
               </Typography>
 
               {availableTags.slice(0, 8).map((t) => {
-                const isActive = cleanTagSearch.toLowerCase() === t.name.toLowerCase();
+                const isActive = cleanSearch.toLowerCase() === t.name.toLowerCase();
 
                 return (
                   <ButtonBase
                     key={t.name}
                     onClick={() =>
-                      onTagSearchChange(isActive ? '' : t.name)
+                      handleSearchChange(isActive ? '' : t.name)
                     }
                     aria-label={`Filtrar por #${t.name}`}
                     sx={{
@@ -485,10 +494,10 @@ export function ArticleFilters({
                 na categoria <strong>&ldquo;{selectedCategory}&rdquo;</strong>
               </>
             )}
-            {cleanTagSearch && (
+            {cleanSearch && (
               <>
                 {' '}
-                com a tag <strong>#{cleanTagSearch}</strong>
+                com o termo ou tag <strong>&ldquo;{cleanSearch}&rdquo;</strong>
               </>
             )}
           </Typography>

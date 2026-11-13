@@ -170,27 +170,87 @@ describe('Fluxos de HomePage e ArticlePage', () => {
     expect(screen.getByText('Design Editorial Suíço')).toBeInTheDocument();
     expect(screen.getByText('Engenharia de Frontend')).toBeInTheDocument();
 
-    // 2. Buscar por tag utilizando o campo de busca por tag
-    const searchInput = screen.getByPlaceholderText(/digite uma tag/i);
+    // 2. Buscar por tag utilizando o campo de busca
+    const searchInput = screen.getByPlaceholderText(/digite um título ou tag/i);
     fireEvent.change(searchInput, { target: { value: 'codigo' } });
 
     // Apenas o artigo com a tag #codigo deve aparecer
     expect(screen.getByText('Engenharia de Frontend')).toBeInTheDocument();
     expect(screen.queryByText('Design Editorial Suíço')).not.toBeInTheDocument();
 
-    // 3. Limpar a busca por tag
-    const clearSearchBtn = screen.getByRole('button', { name: /Limpar campo de busca por tag/i });
+    // 3. Buscar por nome do artigo (título) no mesmo campo
+    fireEvent.change(searchInput, { target: { value: 'Suíço' } });
+    expect(screen.getByText('Design Editorial Suíço')).toBeInTheDocument();
+    expect(screen.queryByText('Engenharia de Frontend')).not.toBeInTheDocument();
+
+    // 4. Limpar a busca
+    const clearSearchBtn = screen.getByRole('button', { name: /Limpar busca|Limpar texto digitado/i });
     fireEvent.click(clearSearchBtn);
 
     expect(screen.getByText('Design Editorial Suíço')).toBeInTheDocument();
     expect(screen.getByText('Engenharia de Frontend')).toBeInTheDocument();
 
-    // 4. Clicar na tag do próprio card
+    // 5. Clicar na tag do próprio card
     const cardTagBtn = screen.getByRole('button', { name: 'Filtrar artigos por #editorial' });
     fireEvent.click(cardTagBtn);
 
     expect(screen.getByText('Design Editorial Suíço')).toBeInTheDocument();
     expect(screen.queryByText('Engenharia de Frontend')).not.toBeInTheDocument();
+  });
+
+  it('carrega mais artigos na paginação incremental de 10 em 10 (scroll infinito)', async () => {
+    const generateBatch = (start: number, count: number): ArticleSummary[] =>
+      Array.from({ length: count }, (_, i) => ({
+        id: `post-${start + i}`,
+        slug: `artigo-${start + i}`,
+        title: `Artigo Número ${start + i}`,
+        excerpt: `Resumo do artigo ${start + i}`,
+        publishedAt: '2026-08-01T10:00:00.000Z',
+        createdAt: '2026-08-01T10:00:00.000Z',
+        updatedAt: '2026-08-01T10:00:00.000Z',
+        readingTimeMinutes: 2,
+        categories: [{ id: 'cat-1', name: 'Geral' }],
+        tags: [{ id: 'tag-1', name: 'teste' }],
+      }));
+
+    const batch1 = generateBatch(1, 10);
+    const batch2 = generateBatch(11, 5);
+
+    vi.spyOn(postsRepository, 'listPostsPage').mockImplementation(async ({ offset }) => {
+      if (offset === 0) {
+        return {
+          items: batch1,
+          hasMore: true,
+          nextOffset: 10,
+        };
+      }
+      return {
+        items: batch2,
+        hasMore: false,
+        nextOffset: 15,
+      };
+    });
+
+    renderAppAt('/');
+
+    // Inicialmente exibe os 10 primeiros artigos
+    expect(await screen.findByText('Artigo Número 1')).toBeInTheDocument();
+    expect(screen.getByText('Artigo Número 10')).toBeInTheDocument();
+    expect(screen.queryByText('Artigo Número 11')).not.toBeInTheDocument();
+
+    // Botão / gatilho para carregar mais 10 artigos está visível
+    const loadMoreBtn = screen.getByRole('button', { name: /Carregar mais 10 artigos/i });
+    expect(loadMoreBtn).toBeInTheDocument();
+
+    fireEvent.click(loadMoreBtn);
+
+    // Agora os artigos do segundo lote também aparecem
+    expect(await screen.findByText('Artigo Número 11')).toBeInTheDocument();
+    expect(screen.getByText('Artigo Número 15')).toBeInTheDocument();
+
+    // Com o fim da lista (hasMore = false), o botão some e exibe a mensagem de fim
+    expect(screen.queryByRole('button', { name: /Carregar mais 10 artigos/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/Fim dos artigos publicados/i)).toBeInTheDocument();
   });
 });
 

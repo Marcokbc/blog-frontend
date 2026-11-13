@@ -1,4 +1,5 @@
 import { Box, Button, Typography } from '@mui/material';
+import { useEffect, useRef } from 'react';
 import {
   EDITORIAL_COLORS,
   EDITORIAL_FONTS,
@@ -22,12 +23,14 @@ interface PostListProps {
   categories?: FilterOption[];
   selectedCategory?: string | null;
   onSelectCategory?: (category: string | null) => void;
+  searchTerm?: string;
+  onSearchTermChange?: (search: string) => void;
+  // Compatibilidade com callers legados
   tagSearch?: string;
   onTagSearchChange?: (search: string) => void;
   availableTags?: FilterOption[];
   totalArticlesCount?: number;
   onClearFilters?: () => void;
-  // Compatibilidade legada
   tags?: FilterOption[];
   selectedTag?: string | null;
   onSelectTag?: (tag: string | null) => void;
@@ -46,6 +49,8 @@ export function PostList({
   categories = [],
   selectedCategory = null,
   onSelectCategory,
+  searchTerm,
+  onSearchTermChange,
   tagSearch = '',
   onTagSearchChange,
   availableTags = [],
@@ -55,13 +60,16 @@ export function PostList({
   selectedTag = null,
   onSelectTag,
 }: PostListProps) {
-  // Unifica tagSearch com selectedTag caso caller legado use apenas selectedTag
-  const effectiveTagSearch = tagSearch || (selectedTag ?? '');
-  const handleTagSearchChange = onTagSearchChange ?? onSelectTag;
+  // Unifica busca por título/tag com propriedades legadas
+  const effectiveSearch =
+    searchTerm !== undefined
+      ? searchTerm
+      : (tagSearch || (selectedTag ?? ''));
+  const handleSearchChange = onSearchTermChange ?? onTagSearchChange ?? onSelectTag;
   const effectiveTags = availableTags.length > 0 ? availableTags : tags;
 
   const isFiltering = Boolean(
-    selectedCategory || (effectiveTagSearch && effectiveTagSearch.trim().length > 0),
+    selectedCategory || (effectiveSearch && effectiveSearch.trim().length > 0),
   );
 
   const handleClearAll = () => {
@@ -69,9 +77,32 @@ export function PostList({
       onClearFilters();
     } else {
       onSelectCategory?.(null);
-      handleTagSearchChange?.('');
+      handleSearchChange?.('');
     }
   };
+
+  // Sentinela para scroll infinito automático
+  const observerTargetRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!hasMore || isFetchingMore) return;
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    const target = observerTargetRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: '300px 0px' },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, isFetchingMore, onLoadMore]);
 
   return (
     <Box
@@ -135,16 +166,16 @@ export function PostList({
         )}
       </Box>
 
-      {/* Controles de Filtro de Categoria e Busca por Tag */}
+      {/* Controles de Filtro de Categoria e Busca por Título ou Tag */}
       {!isLoading &&
         !isError &&
-        (categories.length > 0 || effectiveTags.length > 0 || Boolean(handleTagSearchChange)) && (
+        (categories.length > 0 || effectiveTags.length > 0 || Boolean(handleSearchChange)) && (
           <ArticleFilters
             categories={categories}
             selectedCategory={selectedCategory}
             onSelectCategory={onSelectCategory ?? (() => {})}
-            tagSearch={effectiveTagSearch}
-            onTagSearchChange={handleTagSearchChange ?? (() => {})}
+            searchTerm={effectiveSearch}
+            onSearchTermChange={handleSearchChange ?? (() => {})}
             availableTags={effectiveTags}
             filteredCount={articles.length}
           />
@@ -206,11 +237,11 @@ export function PostList({
             {isFiltering
               ? `Não encontramos artigos associados ${
                   selectedCategory ? `à categoria "${selectedCategory}"` : ''
-                }${selectedCategory && effectiveTagSearch ? ' e ' : ''}${
-                  effectiveTagSearch
-                    ? `à tag "#${effectiveTagSearch.replace(/^#/, '').trim()}"`
+                }${selectedCategory && effectiveSearch ? ' e ' : ''}${
+                  effectiveSearch
+                    ? `ao termo ou tag "${effectiveSearch.replace(/^#/, '').trim()}"`
                     : ''
-                }. Tente selecionar outra categoria ou buscar por outra tag.`
+                }. Tente selecionar outra categoria ou buscar por outro título ou tag.`
               : 'Assim que o primeiro texto for publicado no DraftIn, ele aparecerá aqui em ordem cronológica.'}
           </Typography>
           {isFiltering && (
@@ -237,28 +268,83 @@ export function PostList({
                 post={post}
                 index={index}
                 onSelectCategory={onSelectCategory}
-                onSelectTag={handleTagSearchChange}
+                onSelectTag={handleSearchChange}
               />
             ))}
           </Box>
 
+          {/* Elemento sentinela e feedback de carregamento do scroll infinito */}
           {hasMore && (
             <Box
+              ref={observerTargetRef}
               sx={{
                 display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
                 justifyContent: 'center',
                 pt: 4,
+                pb: 2,
               }}
             >
-              <Button
-                variant="outlined"
-                onClick={onLoadMore}
-                disabled={isFetchingMore}
+              {isFetchingMore ? (
+                <Box
+                  role="status"
+                  aria-live="polite"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    px: 2.5,
+                    py: 1,
+                    border: `2px solid ${EDITORIAL_COLORS.textPrimary}`,
+                    backgroundColor: EDITORIAL_COLORS.navySoft,
+                    boxShadow: NEOBRUTAL_SHADOWS.sm,
+                    fontFamily: EDITORIAL_FONTS.mono,
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    color: EDITORIAL_COLORS.navyPrimary,
+                  }}
+                >
+                  <span>Carregando mais artigos...</span>
+                </Box>
+              ) : (
+                <Button
+                  variant="outlined"
+                  onClick={onLoadMore}
+                  sx={{
+                    fontFamily: EDITORIAL_FONTS.mono,
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  Carregar mais 10 artigos ↓
+                </Button>
+              )}
+            </Box>
+          )}
+
+          {!hasMore && articles.length >= 10 && (
+            <Box
+              sx={{
+                textAlign: 'center',
+                pt: 4,
+                pb: 2,
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontFamily: EDITORIAL_FONTS.mono,
+                  fontSize: '0.74rem',
+                  color: EDITORIAL_COLORS.textSecondary,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                }}
               >
-                {isFetchingMore
-                  ? 'Carregando arquivos...'
-                  : 'Carregar artigos anteriores'}
-              </Button>
+                — Fim dos artigos publicados —
+              </Typography>
             </Box>
           )}
         </>

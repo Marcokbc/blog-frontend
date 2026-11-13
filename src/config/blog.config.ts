@@ -59,7 +59,7 @@ export const blogConfig: BlogConfig = {
       'Um arquivo editorial dedicado a ensaios longos, notas técnicas e reflexões sobre software e forma — sem algoritmos, métricas de vaidade ou distrações.',
   },
   assetsBaseUrl: env.VITE_ASSETS_BASE_URL?.trim() || 'https://api.draftin.io',
-  postsPerBatch: 20,
+  postsPerBatch: Math.max(1, Number(env.VITE_POSTS_PER_BATCH ?? 10) || 10),
   wordsPerMinute: 200,
   footerNote: 'Publicado com foco em leitura e permanência.',
 };
