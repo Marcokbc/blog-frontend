@@ -1,5 +1,6 @@
 import { Box, Container } from '@mui/material';
 import { Outlet } from 'react-router-dom';
+import { FloatingMusicPlayer } from '../components/FloatingMusicPlayer/FloatingMusicPlayer';
 import { Footer } from '../components/Footer/Footer';
 import { Header } from '../components/Header/Header';
 
@@ -36,6 +37,9 @@ export function Layout() {
       </Container>
 
       <Footer />
+
+      {/* Player flutuante com enquadramento de monitor vintage e YouTube IFrame API */}
+      <FloatingMusicPlayer />
     </Box>
   );
 }

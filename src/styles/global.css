@@ -1,3 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy-primary: #14213D;
+  --color-navy-secondary: #23395B;
+  --color-navy-soft: #E8EDF5;
+  --color-editorial-bg: #FFFFFF;
+  --color-editorial-gray: #F5F5F5;
+  --color-editorial-border: #D0D0D0;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-sans: 'Space Grotesk', 'Inter', -apple-system, sans-serif;
+  --font-serif: 'Newsreader', 'Playfair Display', Georgia, serif;
+}
+
 *,
 *::before,
 *::after {

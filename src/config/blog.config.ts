@@ -24,6 +24,8 @@ export interface BlogConfig {
   wordsPerMinute: number;
   /** Nota discreta de rodapé */
   footerNote?: string;
+  /** ID da playlist do YouTube para o player flutuante */
+  youtubePlaylistId: string;
 }
 
 const env: Record<string, string | undefined> =
@@ -62,4 +64,8 @@ export const blogConfig: BlogConfig = {
   postsPerBatch: Math.max(1, Number(env.VITE_POSTS_PER_BATCH ?? 10) || 10),
   wordsPerMinute: 200,
   footerNote: 'Publicado com foco em leitura e permanência.',
+  youtubePlaylistId:
+    env.VITE_YOUTUBE_PLAYLIST_ID?.trim() ||
+    env.YOUTUBE_PLAYLIST_ID?.trim() ||
+    'PLMC9KNkIncKtPzgY-5rmhvj7fax8fdxoj',
 };

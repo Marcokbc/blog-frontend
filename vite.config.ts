@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
@@ -46,7 +47,7 @@ function draftinDevMiddlewarePlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), draftinDevMiddlewarePlugin()],
+  plugins: [tailwindcss(), react(), draftinDevMiddlewarePlugin()],
   build: {
     outDir: 'dist',
     sourcemap: false,
