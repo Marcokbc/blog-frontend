@@ -47,6 +47,7 @@ function draftinDevMiddlewarePlugin(): Plugin {
 }
 
 export default defineConfig({
+  envPrefix: ['VITE_', 'YOUTUBE_'],
   plugins: [tailwindcss(), react(), draftinDevMiddlewarePlugin()],
   build: {
     outDir: 'dist',
